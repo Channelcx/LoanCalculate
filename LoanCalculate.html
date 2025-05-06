@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>购车贷款计算器</title>
+	<style>
+		* {
+		    box-sizing: border-box;
+		    margin: 0;
+		    padding: 0;
+		}
+		
+		body {
+		    font-family: Arial, sans-serif;
+		    margin: 20px;
+		    background-color: #f5f5f5;
+		    display: flex;
+		    gap: 20px;
+		}
+		
+		/* 左侧计算器样式 */
+		.calculator {
+		    background-color: white;
+		    padding: 25px;
+		    border-radius: 10px;
+		    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+		    width: 600px;
+		}
+		
+		.input-group {
+		    margin-bottom: 15px;
+		}
+		
+		label {
+		    display: block;
+		    margin-bottom: 5px;
+		    color: #333;
+		}
+		
+		input, select {
+		    width: 100%;
+		    padding: 8px;
+		    border: 1px solid #ddd;
+		    border-radius: 4px;
+		}
+		
+		button {
+		    color: white;
+		    padding: 10px 20px;
+		    border: none;
+		    border-radius: 4px;
+		    cursor: pointer;
+		    width: 100%;
+		    font-size: 16px;
+		    margin-top: 10px;
+		}
+		
+		#calcBtn { background-color: #4CAF50; } 
+		#calcBtn:hover { background-color: #45a049; }
+		#exportBtn { background-color: #2196F3; display: none; }
+		#exportBtn:hover { background-color: #1976D2; }
+		
+		.result {
+		    margin-top: 20px;
+		    padding: 15px;
+		    background-color: #f8f9fa;
+		    border-radius: 4px;
+		}
+		
+		.result-item {
+		    display: flex;
+		    justify-content: space-between;
+		    margin: 10px 0;
+		}
+		
+		.result-value {
+		    font-weight: bold;
+		    color: #2c3e50;
+		}
+		
+		.section-title {
+		    font-size: 1.1em;
+		    color: #2c3e50;
+		    margin: 20px 0 10px;
+		    padding-bottom: 5px;
+		    border-bottom: 2px solid #4CAF50;
+		}
+		
+		.advance-repayment {
+		    margin: 15px 0;
+		    padding: 10px;
+		    background-color: #f8f9fa;
+		    border-radius: 4px;
+		    display: flex;       /* 新增Flex布局 */
+		    align-items: center; /* 垂直居中 */
+		    gap: 8px;           /* 元素间距 */
+		}
+		
+		/* 复选框容器 */
+		.checkbox-container {
+		    width: 10%;         /* 占父容器10% */
+		    min-width: 30px;    /* 最小宽度 */
+		}
+		
+		/* 实际复选框样式 */
+		#advanceRepayment {
+		    transform: scale(1.5); /* 放大复选框 */
+		    margin-left: 5px;    /* 左边距 */
+		}
+		
+		/* 文字标签容器 */
+		.checkbox-label {
+		    flex: 1;            /* 占据剩余空间 */
+		    white-space: normal; /* 允许文字换行 */
+		    line-height: 1.4;   /* 行高优化 */
+		}
+		
+		/* 移动端适配 */
+		@media (max-width: 768px) {
+		    .advance-repayment {
+		flex-wrap: wrap; /* 小屏幕换行显示 */
+		    }
+		    .checkbox-container {
+		width: 15%;
+		    }
+		}
+		
+		.savings { color: #4CAF50; font-weight: bold; }
+		.calculation-note { color: #666; font-size: 0.9em; margin-top: 10px; }
+		.other-fee-note { font-size: 0.8em; color: #666; margin-top: 5px; }
+		
+		/* 右侧还款计划表样式 */
+		.schedule-container {
+		    background-color: white;
+		    padding: 25px;
+		    border-radius: 10px;
+		    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+		    flex: 1;
+		    max-width: 800px;
+		    height: 80vh;
+		    overflow: hidden;
+		    display: flex;
+		    flex-direction: column;
+		}
+		
+		.schedule-header {
+		    font-size: 1.2em;
+		    margin-bottom: 15px;
+		    color: #2c3e50;
+		}
+		
+		#repaymentSchedule {
+		    flex: 1;
+		    overflow-y: auto;
+		    border: 1px solid #ddd;
+		    border-radius: 4px;
+		}
+		
+		.schedule-table {
+		    width: 100%;
+		    border-collapse: collapse;
+		    font-size: 0.9em;
+		}
+		
+		.schedule-table th,
+		.schedule-table td {
+		    padding: 8px;
+		    text-align: right;
+		    border-bottom: 1px solid #ddd;
+		}
+		
+		.schedule-table th {
+		    background-color: #f8f9fa;
+		    position: sticky;
+		    top: 0;
+		    z-index: 1;
+		}
+		
+		.schedule-table tr:nth-child(even) {
+		    background-color: #f8f9fa;
+		}
+		
+		.schedule-table tr:hover {
+		    background-color: #e9f5ff;
+		}
+		
+		@media (max-width: 1200px) {
+		    body {
+		        flex-direction: column;
+		    }
+		    .calculator, .schedule-container {
+		        width: auto;
+		        max-width: 100%;
+		    }
+		}
+	</style>
+</head>
+<body>
+	<!-- 左侧计算器 -->
+	<div class="calculator">
+		<h2>购车贷款计算器</h2>
+		<div class="section-title">购车基础费用</div>
+		<div class="input-group">
+			<label>裸车价（元）</label>
+			<input type="number" id="vehiclePrice" step="1000" placeholder="请输入车辆价格">
+		</div>
+		<div class="input-group">
+			<label>购置税（元）</label>
+			<input type="number" id="purchaseTax" step="100" placeholder="自动计算购置税">
+		</div>
+		<div class="input-group">
+			<label>保险费用（元）</label>
+			<input type="number" id="insurance" step="100" placeholder="请输入保险费用">
+		</div>
+		<div class="input-group">
+			<label>其他费用（元）</label>
+			<input type="text" id="otherFees" placeholder="输入加法算式，如：1500+2000+500">
+			<div class="other-fee-note">可输入多个费用相加，使用+号分隔（例如：上牌费+服务费+装饰费）</div>
+		</div>
+		<div class="section-title">贷款信息</div>
+		<div class="input-group">
+			<label>还款方式</label>
+			<select id="repaymentMethod">
+				<option value="1">等额本息</option>
+				<option value="2">等额本金</option>
+				<option value="3">等本等息</option>
+			</select>
+		</div>
+		<div class="input-group">
+			<label>贷款金额（元）</label>
+			<input type="number" id="loanAmount" step="1000" placeholder="请输入贷款金额">
+		</div>
+		<div class="input-group">
+			<label>年利率（%）</label>
+			<input type="number" id="annualRate" step="0.1" placeholder="请输入年利率">
+		</div>
+		<div class="input-group">
+			<label>贷款期限</label>
+			<div style="display: flex; gap: 10px;">
+				<input type="number" id="loanTerm" style="flex: 3">
+				<select id="termUnit" style="flex: 1">
+					<option value="year">年</option>
+					<option value="month">月</option>
+				</select>
+			</div>
+		</div>
+      
+		<div class="advance-repayment">
+			<div class="checkbox-container">
+				<input type="checkbox" id="advanceRepayment">
+			</div>
+			<label for="advanceRepayment" class="checkbox-label"> 是否满2年提前还款（需贷款期限≥2年） </label>
+		</div>
+      
+		<button id="calcBtn" onclick="calculate()">立即计算</button>
+		<button id="exportBtn" onclick="exportCSV()">导出还款计划表</button>
+		<div class="result">
+			<div class="section-title">计算结果</div>
+			<div class="result-item">
+				<span>全款落地价：</span>
+				<span class="result-value" id="fullPayment">0.00</span>
+			</div>
+			<div class="result-item">
+				<span>贷款总成本：</span>
+				<span class="result-value" id="loanPayment">0.00</span>
+			</div>
+			<div class="result-item" id="advanceInfo" style="display: none;">
+				<span>提前还款节省：</span>
+				<span class="savings" id="interestSavings">0.00</span>
+			</div>
+			<div class="result-item">
+				<span id="monthlyLabel">月供：</span>
+				<span class="result-value" id="monthlyPayment">0.00</span>
+			</div>
+			<div class="result-item" id="firstMonthItem" style="display: none;">
+				<span>首月还款：</span>
+				<span class="result-value" id="firstMonthPayment">0.00</span>
+			</div>
+			<div class="result-item">
+				<span>总支付利息：</span>
+				<span class="result-value" id="totalInterest">0.00</span>
+			</div>
+			<div class="calculation-note" id="calculationNote"></div>
+		</div>
+	</div>
+	<!-- 右侧还款计划表 -->
+	<div class="schedule-container">
+		<div class="schedule-header">每月还款计划表</div>
+		<div id="repaymentSchedule">
+			<table class="schedule-table">
+				<thead>
+					<tr>
+						<th>期数</th>
+						<th>月供金额</th>
+						<th>本金</th>
+						<th>利息</th>
+						<th>累计还款</th>
+						<th>剩余本金</th>
+					</tr>
+				</thead>
+				<tbody id="scheduleBody">
+					<!-- 动态生成内容 -->
+				</tbody>
+			</table>
+		</div>
+	</div>
+	<script>
+		let repaymentSchedule = [];
+		
+		// 自动计算购置税
+		document.getElementById('vehiclePrice').addEventListener('input', function() {
+		    const vehiclePrice = parseFloat(this.value) || 0;
+		    const taxInput = document.getElementById('purchaseTax');
+		    if (!taxInput.dataset.manual) {
+		        taxInput.value = (vehiclePrice * 0.1 / 1.13).toFixed(2);
+		    }
+		});
+		
+		document.getElementById('purchaseTax').addEventListener('input', function() {
+		    this.dataset.manual = true;
+		});
+		
+		// 其他费用计算
+		function calculateOtherFees(input) {
+		    try {
+		        return input.split('+')
+		            .map(x => parseFloat(x.trim().replace(/[^0-9.]/g, '')))
+		            .filter(x => !isNaN(x))
+		            .reduce((sum, current) => sum + current, 0);
+		    } catch (e) {
+		        alert("其他费用输入格式错误，请使用加法算式（如：1500+2000）");
+		        return 0;
+		    }
+		}
+		
+		function calculate() {
+		    // 获取输入值
+		    const vehiclePrice = parseFloat(document.getElementById('vehiclePrice').value) || 0;
+		    const purchaseTax = parseFloat(document.getElementById('purchaseTax').value) || 0;
+		    const insurance = parseFloat(document.getElementById('insurance').value) || 0;
+		    const otherFees = calculateOtherFees(document.getElementById('otherFees').value);
+		    const advanceRepayment = document.getElementById('advanceRepayment').checked;
+		    
+		    const method = document.getElementById('repaymentMethod').value;
+		    const loanAmount = parseFloat(document.getElementById('loanAmount').value);
+		    const annualRate = parseFloat(document.getElementById('annualRate').value);
+		    const term = parseFloat(document.getElementById('loanTerm').value);
+		    const termUnit = document.getElementById('termUnit').value;
+		
+		    // 输入验证
+		    if (loanAmount > vehiclePrice) {
+		        alert("贷款金额不能超过裸车价！");
+		        return;
+		    }
+		    if ([vehiclePrice, loanAmount, annualRate, term].some(v => v <= 0)) {
+		        alert("请输入有效的正数值！");
+		        return;
+		    }
+		
+		    // 转换单位
+		    const months = termUnit === 'year' ? term * 12 : term;
+		    if (advanceRepayment && months < 24) {
+		        alert("选择提前还款需要贷款期限≥24个月！");
+		        return;
+		    }
+		    const monthlyRate = annualRate / 100 / 12;
+		
+		    // 计算基础费用
+		    const fullPayment = vehiclePrice + purchaseTax + insurance + otherFees;
+		    document.getElementById('fullPayment').textContent = fullPayment.toFixed(2);
+		
+		    // 计算贷款相关
+		    let totalLoanPayment = 0;
+		    let normalTotal = 0;
+		    repaymentSchedule = [];
+		    
+		    switch(method) {
+		        case '1':
+		            [totalLoanPayment, normalTotal] = calculateEqualInstallment(loanAmount, monthlyRate, months, advanceRepayment);
+		            break;
+		        case '2':
+		            [totalLoanPayment, normalTotal] = calculateEqualPrincipal(loanAmount, monthlyRate, months, advanceRepayment);
+		            break;
+		        case '3':
+		            [totalLoanPayment, normalTotal] = calculateEqualPrincipalInterest(loanAmount, monthlyRate, months, advanceRepayment);
+		            break;
+		    }
+		
+		    // 显示结果
+		    const loanPayment = vehiclePrice - loanAmount + totalLoanPayment + purchaseTax + insurance + otherFees;
+		    document.getElementById('loanPayment').textContent = loanPayment.toFixed(2);
+		    
+		    const savings = normalTotal - totalLoanPayment;
+		    document.getElementById('interestSavings').textContent = savings.toFixed(2);
+		    document.getElementById('advanceInfo').style.display = advanceRepayment ? 'flex' : 'none';
+		    document.getElementById('exportBtn').style.display = 'block';
+		    
+		    renderSchedule();
+		}
+		
+		// 等额本息计算
+		function calculateEqualInstallment(amount, monthlyRate, months, advance) {
+		    const monthlyPayment = (amount * monthlyRate * Math.pow(1 + monthlyRate, months)) / 
+		                          (Math.pow(1 + monthlyRate, months) - 1);
+		    
+		    let totalPayment = monthlyPayment * months;
+		    const normalTotal = totalPayment;
+		
+		    // 生成还款计划
+		    let remainingPrincipal = amount;
+		    let totalPaid = 0;
+		    
+		    for(let i = 1; i <= months; i++) {
+		        const interest = remainingPrincipal * monthlyRate;
+		        const principal = monthlyPayment - interest;
+		        totalPaid += monthlyPayment;
+		        remainingPrincipal -= principal;
+		
+		        repaymentSchedule.push({
+		            month: i,
+		            payment: monthlyPayment,
+		            principal: principal,
+		            interest: interest,
+		            totalPaid: totalPaid,
+		            remaining: Math.max(remainingPrincipal, 0)
+		        });
+		
+		        if(advance && i === 24) break;
+		    }
+		
+		    if(advance) {
+		        const remaining = repaymentSchedule[23].remaining;
+		        totalPayment = repaymentSchedule[23].totalPaid + remaining;
+		        repaymentSchedule[23].remaining = 0;
+		        repaymentSchedule[23].payment += remaining;
+		        repaymentSchedule[23].interest += remaining;
+		    }
+		
+		    updateLoanResult({
+		        monthly: monthlyPayment.toFixed(2),
+		        total: totalPayment.toFixed(2),
+		        interest: (totalPayment - amount).toFixed(2),
+		        note: advance ? "已计算24期后提前还款" : "每月还款金额相同"
+		    });
+		    return [totalPayment, normalTotal];
+		}
+		
+		// 等额本金计算
+		function calculateEqualPrincipal(amount, monthlyRate, months, advance) {
+		    const monthlyPrincipal = amount / months;
+		    let totalInterest = 0;
+		    let firstMonthPayment = 0;
+		    
+		    // 生成还款计划
+		    let remainingPrincipal = amount;
+		    let totalPaid = 0;
+		    
+		    for(let i = 1; i <= months; i++) {
+		        const interest = remainingPrincipal * monthlyRate;
+		        const payment = monthlyPrincipal + interest;
+		        totalPaid += payment;
+		        remainingPrincipal -= monthlyPrincipal;
+		
+		        repaymentSchedule.push({
+		            month: i,
+		            payment: payment,
+		            principal: monthlyPrincipal,
+		            interest: interest,
+		            totalPaid: totalPaid,
+		            remaining: Math.max(remainingPrincipal, 0)
+		        });
+		
+		        totalInterest += interest;
+		        if(i === 1) firstMonthPayment = payment;
+		        
+		        if(advance && i === 24) break;
+		    }
+		
+		    let totalPayment = amount + totalInterest;
+		    const normalTotal = totalPayment;
+		
+		    if(advance) {
+		        const remaining = repaymentSchedule[23].remaining;
+		        totalPayment = repaymentSchedule[23].totalPaid + remaining;
+		        repaymentSchedule[23].remaining = 0;
+		        repaymentSchedule[23].payment += remaining;
+		        repaymentSchedule[23].interest += remaining;
+		    }
+		
+		    updateLoanResult({
+		        monthly: (totalInterest/months + monthlyPrincipal).toFixed(2),
+		        total: totalPayment.toFixed(2),
+		        interest: (totalPayment - amount).toFixed(2),
+		        note: advance ? "已计算24期后提前还款" : "每月偿还本金相同",
+		        showFirstMonth: true,
+		        firstMonth: firstMonthPayment.toFixed(2)
+		    });
+		    return [totalPayment, normalTotal];
+		}
+		
+		// 等本等息计算
+		function calculateEqualPrincipalInterest(amount, monthlyRate, months, advance) {
+		    const monthlyPrincipal = amount / months;
+		    const monthlyInterest = amount * monthlyRate;
+		    const normalTotal = (monthlyPrincipal + monthlyInterest) * months;
+		    
+		    // 生成还款计划
+		    let remainingPrincipal = amount;
+		    let totalPaid = 0;
+		    
+		    for(let i = 1; i <= months; i++) {
+		        const payment = monthlyPrincipal + monthlyInterest;
+		        totalPaid += payment;
+		        remainingPrincipal -= monthlyPrincipal;
+		
+		        repaymentSchedule.push({
+		            month: i,
+		            payment: payment,
+		            principal: monthlyPrincipal,
+		            interest: monthlyInterest,
+		            totalPaid: totalPaid,
+		            remaining: Math.max(remainingPrincipal, 0)
+		        });
+		
+		        if(advance && i === 24) break;
+		    }
+		
+		    let totalPayment = normalTotal;
+		    if(advance) {
+		        const remaining = repaymentSchedule[23].remaining;
+		        totalPayment = repaymentSchedule[23].totalPaid + remaining;
+		        repaymentSchedule[23].remaining = 0;
+		        repaymentSchedule[23].payment += remaining;
+		    }
+		
+		    updateLoanResult({
+		        monthly: (monthlyPrincipal + monthlyInterest).toFixed(2),
+		        total: totalPayment.toFixed(2),
+		        interest: (monthlyInterest * months).toFixed(2),
+		        note: advance ? "已计算24期后提前还款（剩余本金需一次性结清）" : "每月偿还固定本息"
+		    });
+		    return [totalPayment, normalTotal];
+		}
+		
+		function updateLoanResult(data) {
+		    document.getElementById('monthlyPayment').textContent = data.monthly;
+		    document.getElementById('totalInterest').textContent = data.interest;
+		    document.getElementById('calculationNote').textContent = data.note || '';
+		    
+		    const firstMonthItem = document.getElementById('firstMonthItem');
+		    if(data.showFirstMonth) {
+		        firstMonthItem.style.display = 'flex';
+		        document.getElementById('firstMonthPayment').textContent = data.firstMonth;
+		        document.getElementById('monthlyLabel').textContent = '平均月供：';
+		    } else {
+		        firstMonthItem.style.display = 'none';
+		        document.getElementById('monthlyLabel').textContent = '月供：';
+		    }
+		}
+		
+		// 渲染还款计划表
+		function renderSchedule() {
+		    const tbody = document.getElementById('scheduleBody');
+		    tbody.innerHTML = '';
+		
+		    repaymentSchedule.forEach(item => {
+		        const row = document.createElement('tr');
+		        row.innerHTML = `
+		            <td>第${item.month}期</td>
+		            <td>${item.payment.toFixed(2)}</td>
+		            <td>${item.principal.toFixed(2)}</td>
+		            <td>${item.interest.toFixed(2)}</td>
+		            <td>${item.totalPaid.toFixed(2)}</td>
+		            <td>${item.remaining.toFixed(2)}</td>
+		        `;
+		        tbody.appendChild(row);
+		    });
+		
+		    // 添加汇总行
+		    const totalRow = document.createElement('tr');
+		    totalRow.style.fontWeight = 'bold';
+		    totalRow.style.backgroundColor = '#e3f2fd';
+		    totalRow.innerHTML = `
+		        <td>总计</td>
+		        <td>${repaymentSchedule.reduce((sum, item) => sum + item.payment, 0).toFixed(2)}</td>
+		        <td>${repaymentSchedule.reduce((sum, item) => sum + item.principal, 0).toFixed(2)}</td>
+		        <td>${repaymentSchedule.reduce((sum, item) => sum + item.interest, 0).toFixed(2)}</td>
+		        <td colspan="2"></td>
+		    `;
+		    tbody.appendChild(totalRow);
+		}
+		
+		// 导出CSV
+		function exportCSV() {
+		    if(repaymentSchedule.length === 0) return;
+		
+		    const csvRows = [
+		        ['期数', '月供金额', '本金', '利息', '累计还款', '剩余本金'].join(',')
+		    ];
+		
+		    repaymentSchedule.forEach(item => {
+		        csvRows.push([
+		            item.month,
+		            item.payment.toFixed(2),
+		            item.principal.toFixed(2),
+		            item.interest.toFixed(2),
+		            item.totalPaid.toFixed(2),
+		            item.remaining.toFixed(2)
+		        ].join(','));
+		    });
+		
+		    const blob = new Blob(["\uFEFF"+csvRows.join('\n')], {type: 'text/csv;charset=utf-8;'});
+		    const link = document.createElement('a');
+		    link.href = URL.createObjectURL(blob);
+		    link.download = `贷款还款计划_${new Date().toLocaleDateString()}.csv`;
+		    link.click();
+		}
+	</script>
+</body>
+</html>
